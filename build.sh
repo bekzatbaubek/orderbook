@@ -1,3 +1,3 @@
 #!/bin/sh
 
-clang++ -std=c++17 -g -o ./build/orderbook main.cpp
+clang++ -std=c++17 -g -o orderbook orderbook.cpp

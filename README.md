@@ -1,12 +1,17 @@
 # Orderbook
 
-## Sample Orderbook and Message data:
+Simple Limit orderbook implementation in C++
 
-https://lobsterdata.com/info/DataSamples.php
+## Build and Run
+```sh
+./build.sh
+
+./orderbook
+```
 
 ## Notes
 
 ```
-.clang-format -- telling clangd to NOT do 2-space indents (why?)
+.clang-format -- telling clangd to NOT do 2-space indents (why is it the default?)
 compile_flags.txt -- telling clangd to use C++17
 ```
