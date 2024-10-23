@@ -2,12 +2,13 @@
 #include <iostream>
 #include <map>
 #include <queue>
+#include <sys/types.h>
 
 void printUsage() {
     std::cout << "Orderbook" << '\n';
     std::cout << "Options:" << '\n';
-    std::cout << "p:  Print ordebook" << '\n';
-    std::cout << "o:  Place order" << '\n';
+    std::cout << "p: Print ordebook" << '\n';
+    std::cout << "o: Place order" << '\n';
     std::cout << "q:  Quit" << '\n';
 }
 
@@ -66,6 +67,35 @@ struct Orderbook {
             // Find the largest ask not larger than order
             // Match from smallest until largest in FIFO order
             // Put remaining quantity as bid
+            if (asks.empty()) {
+                // No asks available, put order in bids
+                addOrder(order, BUY);
+                return false;
+            }
+            auto it = asks.begin();
+            while(!asks.empty() && it != asks.end()) {
+                if (order.price >= it->first) {
+                    while (!it->second.orders.empty() && order.quantity > 0) {
+                        Order ask = it->second.orders.front();
+                        if (ask.quantity > order.quantity) {
+                            // Partial fill
+                            ask.quantity -= order.quantity;
+                            it->second.totalQuantity -= order.quantity;
+                            order.quantity = 0;
+                        } else {
+                            // Full fill
+                            order.quantity -= ask.quantity;
+                            it->second.totalQuantity -= ask.quantity;
+                            it->second.orders.pop();
+                        }
+                    }
+                } else {
+                    // No more asks available
+                    addOrder(order, BUY);
+                    return false;
+                }
+                it++;
+            }
             return false;
         } break;
         case SELL: {
@@ -75,17 +105,31 @@ struct Orderbook {
         }
         return false;
     }
+    void printOrderbook(){
+        std::cout << "Bids" << '\n';
+        for (auto it = bids.rbegin(); it != bids.rend(); it++) {
+            std::cout << it->first << " " << it->second.totalQuantity << '\n';
+        }
+        std::cout << "Asks" << '\n';
+        for (auto it = asks.begin(); it != asks.end(); it++) {
+            std::cout << it->first << " " << it->second.totalQuantity << '\n';
+        }
+    }
 };
 
 void fillTestData(Orderbook &orderbook) {
-    for (int i = 90000; i <= 10000; i+=1000) {
+    for (int i = 9000; i <= 10000; i+=100) {
         Order order = Order(i, 50);
         orderbook.addOrder(order, BUY);
     }
-    for (int i = 10100; i <= 11000; i+=1000) {
+    for (int i = 10100; i <= 11000; i+=100) {
         Order order = Order(i, 30);
         orderbook.addOrder(order, SELL);
     }
+}
+
+void placeOrder(const Orderbook &orderbook) {
+
 }
 
 int main(int argc, char **argv) {
@@ -94,31 +138,37 @@ int main(int argc, char **argv) {
     Orderbook orderbook;
     fillTestData(orderbook);
 
-    while (running) {
-        std::cout << "Simple Limit Orderbook" << '\n';
-        std::cout << "Enter a command, \'h\' for help:" << '\n';
-        char option;
-        std::cin >> option;
+    orderbook.printOrderbook();
 
-        switch (option) {
-        case 'p': {
-            std::cout << "Print orderbook" << '\n';
-        } break;
-        case 'o': {
-            std::cout << "Place order" << '\n';
-        } break;
-        case 'q': {
-            std::cout << "Quit" << '\n';
-            running = false;
-        } break;
-        case 'h': {
-            printUsage();
-        } break;
-        default: {
-            printUsage();
-        } break;
-        }
-    }
+    Order order = Order(10200, 50);
+    orderbook.match(order, BUY);
+
+    orderbook.printOrderbook();
+
+    // while (running) {
+    //     std::cout << "Simple Limit Orderbook" << '\n';
+    //     std::cout << "Enter a command, \'h\' for help:" << '\n';
+    //     char option;
+    //     std::cin >> option;
+
+    //     switch (option) {
+    //     case 'p': {
+    //         orderbook.printOrderbook();
+    //     } break;
+    //     case 'o': {
+    //         std::cout << "Place order" << '\n';
+    //         Order order = Order(10200, 20);
+    //         orderbook.match(order, BUY);
+    //     } break;
+    //     case 'q': {
+    //         std::cout << "Quit" << '\n';
+    //         running = false;
+    //     } break;
+    //     case 'h': {
+    //         printUsage();
+    //     } break;
+    //     }
+    // }
 
     return 0;
 }

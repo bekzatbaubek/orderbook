@@ -3,10 +3,13 @@
 Simple Limit orderbook implementation in C++
 
 ## Build and Run
+
+- Requires `clang`
+
 ```sh
 ./build.sh
 
-./orderbook
+./build/orderbook
 ```
 
 ## Notes
