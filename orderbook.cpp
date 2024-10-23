@@ -61,7 +61,7 @@ struct Orderbook {
         }
     }
 
-    bool match(Order order, Side side) {
+    void match(Order order, Side side) {
         switch (side) {
         case BUY: {
             // Find the largest ask not larger than order
@@ -70,11 +70,17 @@ struct Orderbook {
             if (asks.empty()) {
                 // No asks available, put order in bids
                 addOrder(order, BUY);
-                return false;
+                return;
             }
+            std::vector<uint64_t> toRemove;
+            toRemove.reserve(asks.size());
+
             auto it = asks.begin();
-            while(!asks.empty() && it != asks.end()) {
+
+            for (auto it = asks.begin(); it != asks.end(); it++) {
+                // Match price category
                 if (order.price >= it->first) {
+                    // Match FIFO, per order in queue
                     while (!it->second.orders.empty() && order.quantity > 0) {
                         Order ask = it->second.orders.front();
                         if (ask.quantity > order.quantity) {
@@ -89,23 +95,32 @@ struct Orderbook {
                             it->second.orders.pop();
                         }
                     }
+                    if (it->second.totalQuantity == 0) {
+                        // Remove price category
+                        toRemove.push_back(it->first);
+                    }
                 } else {
                     // No more asks available
                     addOrder(order, BUY);
-                    return false;
+                    return;
                 }
-                it++;
             }
-            return false;
+            if (order.quantity > 0) {
+                addOrder(order, BUY);
+            }
+            for (auto price : toRemove) {
+                asks.erase(price);
+            }
+            return;
         } break;
         case SELL: {
             // Find the smallest bid
-            return false;
+            return;
         } break;
         }
-        return false;
+        return;
     }
-    void printOrderbook(){
+    void printOrderbook() {
         std::cout << "Bids" << '\n';
         for (auto it = bids.rbegin(); it != bids.rend(); it++) {
             std::cout << it->first << " " << it->second.totalQuantity << '\n';
@@ -118,19 +133,17 @@ struct Orderbook {
 };
 
 void fillTestData(Orderbook &orderbook) {
-    for (int i = 9000; i <= 10000; i+=100) {
+    for (int i = 9000; i <= 9500; i += 100) {
         Order order = Order(i, 50);
         orderbook.addOrder(order, BUY);
     }
-    for (int i = 10100; i <= 11000; i+=100) {
+    for (int i = 10100; i <= 10500; i += 100) {
         Order order = Order(i, 30);
         orderbook.addOrder(order, SELL);
     }
 }
 
-void placeOrder(const Orderbook &orderbook) {
-
-}
+void placeOrder(const Orderbook &orderbook) {}
 
 int main(int argc, char **argv) {
     bool running = true;
@@ -139,10 +152,8 @@ int main(int argc, char **argv) {
     fillTestData(orderbook);
 
     orderbook.printOrderbook();
-
-    Order order = Order(10200, 50);
+    Order order = Order(10600, 160);
     orderbook.match(order, BUY);
-
     orderbook.printOrderbook();
 
     // while (running) {
