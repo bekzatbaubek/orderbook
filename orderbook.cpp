@@ -46,6 +46,7 @@ struct Orderbook {
                 bids[order.price].orders.push(order);
                 bids[order.price].totalQuantity += order.quantity;
             }
+            std::cout << "Adding order to bids at: " << order.price <<", quantity: " << order.quantity << '\n';
         } break;
         case SELL: {
             if (asks.find(order.price) == asks.end()) {
@@ -57,6 +58,7 @@ struct Orderbook {
                 asks[order.price].orders.push(order);
                 asks[order.price].totalQuantity += order.quantity;
             }
+            std::cout << "Adding order to asks at: " << order.price <<", quantity: " << order.quantity << '\n';
         } break;
         }
     }
@@ -88,11 +90,13 @@ struct Orderbook {
                             ask.quantity -= order.quantity;
                             it->second.totalQuantity -= order.quantity;
                             order.quantity = 0;
+                            std::cout << "Order matched at price: " << ask.price << ", quantity: " << order.quantity << '\n';
                         } else {
                             // Full fill
                             order.quantity -= ask.quantity;
                             it->second.totalQuantity -= ask.quantity;
                             it->second.orders.pop();
+                            std::cout << "Order matched at price: " << ask.price << ", quantity: " << ask.quantity << '\n';
                         }
                     }
                     if (it->second.totalQuantity == 0) {
@@ -134,12 +138,16 @@ struct Orderbook {
 
 void fillTestData(Orderbook &orderbook) {
     for (int i = 9000; i <= 9500; i += 100) {
-        Order order = Order(i, 50);
+        Order order = Order(i, 20);
         orderbook.addOrder(order, BUY);
+        Order nextOrder = Order(i, 30);
+        orderbook.addOrder(nextOrder, BUY);
     }
     for (int i = 10100; i <= 10500; i += 100) {
-        Order order = Order(i, 30);
+        Order order = Order(i, 10);
         orderbook.addOrder(order, SELL);
+        Order nextOrder = Order(i, 20);
+        orderbook.addOrder(nextOrder, SELL);
     }
 }
 
@@ -152,7 +160,7 @@ int main(int argc, char **argv) {
     fillTestData(orderbook);
 
     orderbook.printOrderbook();
-    Order order = Order(10600, 160);
+    Order order = Order(10600, 78);
     orderbook.match(order, BUY);
     orderbook.printOrderbook();
 
